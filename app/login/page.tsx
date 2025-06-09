@@ -3,11 +3,13 @@
 import { useState } from "react"
 import { signIn, signInWithGoogle, signInWithGitHub } from "@/lib/auth"
 import { AuthRedirectHandler } from "@/components/auth-redirect-handler"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [redirectUrl, setRedirectUrl] = useState<string | undefined>()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -26,6 +28,9 @@ export default function LoginPage() {
     if (result.success && result.redirectUrl) {
       setMessage({ type: "success", text: result.message || "Login successful!" })
       setRedirectUrl(result.redirectUrl)
+      setTimeout(() => {
+        router.push(result.redirectUrl!)
+      }, 1000)
     }
   }
 
@@ -98,6 +103,7 @@ export default function LoginPage() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -112,13 +118,14 @@ export default function LoginPage() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
+                disabled={isLoading}
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <a href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <a href="/reset-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Forgot your password?
               </a>
             </div>

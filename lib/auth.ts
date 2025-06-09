@@ -82,13 +82,18 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     }
 
     // Get user profile and role
-    const userProfile = await roleManager.getUserProfile(authData.user.id)
-    if (!userProfile) {
-      console.error("❌ No profile found for user")
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authData.user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error("❌ No profile found for user:", profileError)
       return { error: "User profile not found. Please contact support." }
     }
 
-    const userRole = await roleManager.getUserRole(authData.user)
+    const userRole = profile.role as UserRole
     console.log(`👤 User role: ${userRole}`)
 
     // Log successful login activity
@@ -185,9 +190,24 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     return { error: "Invalid role selected" }
   }
 
+  // Additional validation for students
+  if (role === "student" && !grade) {
+    return { error: "Grade is required for students" }
+  }
+
   try {
     console.log(`🚀 Starting signup for ${email} as ${role}`)
     const supabase = createServerClient()
+
+    // Check if email already exists
+    const { data: existingUser } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password: "dummy-password",
+    })
+
+    if (existingUser?.user) {
+      return { error: "An account with this email already exists" }
+    }
 
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -214,12 +234,12 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     console.log(`✅ User created in auth: ${data.user.id}`)
 
     // Create profile
-    const { error: profileError } = await supabase.from("profiles").upsert({
+    const { error: profileError } = await supabase.from("profiles").insert({
       id: data.user.id,
       email: email.toLowerCase().trim(),
       full_name: fullName,
       role: role,
-      grade: grade,
+      grade: role === "student" ? grade : null,
       country: country,
       state: state,
       school_name: schoolName,
@@ -230,6 +250,8 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
 
     if (profileError) {
       console.error("❌ Profile creation error:", profileError)
+      // Clean up the auth user if profile creation fails
+      await supabase.auth.admin.deleteUser(data.user.id)
       return { error: "Failed to create profile. Please try again." }
     }
 
@@ -253,7 +275,8 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
 
     return {
       success: true,
-      message: "Account created successfully! Please check your email to verify your account before signing in.",
+      message: "Account created successfully! Please check your email to verify your account.",
+      requiresVerification: true,
     }
   } catch (error) {
     console.error("💥 Unexpected signup error:", error)

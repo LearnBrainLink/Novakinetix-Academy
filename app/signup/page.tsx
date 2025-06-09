@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation"
 export default function SignUpPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [requiresVerification, setRequiresVerification] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setMessage(null)
+    setRequiresVerification(false)
 
     const formData = new FormData(e.currentTarget)
     const result = await signUp(formData)
@@ -25,11 +27,32 @@ export default function SignUpPage() {
 
     if (result.success) {
       setMessage({ type: "success", text: result.message || "Account created successfully!" })
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        router.push("/login")
-      }, 3000)
+      if (result.requiresVerification) {
+        setRequiresVerification(true)
+        // Redirect to login page after a delay
+        setTimeout(() => {
+          router.push("/login")
+        }, 5000)
+      }
     }
+  }
+
+  if (requiresVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Check your email</h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              We've sent you a verification email. Please check your inbox and click the verification link to activate your account.
+            </p>
+            <p className="mt-4 text-center text-sm text-gray-600">
+              You will be redirected to the login page in a few seconds...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -68,6 +91,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your full name"
+                disabled={isLoading}
               />
             </div>
 
@@ -83,6 +107,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your email"
+                disabled={isLoading}
               />
             </div>
 
@@ -98,6 +123,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Create a password"
+                disabled={isLoading}
               />
             </div>
 
@@ -113,6 +139,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Confirm your password"
+                disabled={isLoading}
               />
             </div>
 
@@ -125,6 +152,7 @@ export default function SignUpPage() {
                 name="role"
                 required
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                disabled={isLoading}
               >
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
@@ -140,6 +168,7 @@ export default function SignUpPage() {
                 id="grade"
                 name="grade"
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                disabled={isLoading}
               >
                 <option value="">Select grade</option>
                 <option value="9">Grade 9</option>
@@ -160,6 +189,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your country"
+                disabled={isLoading}
               />
             </div>
 
@@ -174,6 +204,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your state/province"
+                disabled={isLoading}
               />
             </div>
 
@@ -188,6 +219,7 @@ export default function SignUpPage() {
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your school name"
+                disabled={isLoading}
               />
             </div>
           </div>
