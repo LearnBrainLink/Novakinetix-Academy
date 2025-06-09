@@ -7,9 +7,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Users, Video, Briefcase, TrendingUp, Download, Eye, PlayCircle, FileText } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
+import {
+  Users,
+  Video,
+  Briefcase,
+  TrendingUp,
+  Download,
+  Eye,
+  PlayCircle,
+  FileText,
+  Calendar,
+  Clock,
+  BarChart3,
+  PieChart,
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react"
 
 interface AnalyticsData {
   totalUsers: number
@@ -28,17 +44,26 @@ interface AnalyticsData {
     monthlyActiveUsers: number
     averageSessionDuration: string
   }
+  recentActivity: Array<{
+    type: string
+    description: string
+    timestamp: string
+    user: string
+  }>
 }
 
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [timeRange, setTimeRange] = useState("30d")
+  const [selectedMetric, setSelectedMetric] = useState("users")
   const supabase = createClientComponentClient()
   const { user } = useAuth()
 
   useEffect(() => {
     fetchAnalyticsData()
+    const interval = setInterval(fetchAnalyticsData, 30000) // Refresh every 30 seconds
+    return () => clearInterval(interval)
   }, [timeRange])
 
   const fetchAnalyticsData = async () => {
@@ -46,7 +71,7 @@ export default function AnalyticsPage() {
       // Fetch users data with roles
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("created_at, role")
+        .select("created_at, role, full_name")
 
       if (usersError) throw usersError
 
@@ -60,7 +85,7 @@ export default function AnalyticsPage() {
       // Fetch applications data
       const { data: applications, error: applicationsError } = await supabase
         .from("internship_applications")
-        .select("status, applied_at")
+        .select("status, applied_at, user_id")
 
       if (applicationsError) throw applicationsError
 
@@ -131,6 +156,29 @@ export default function AnalyticsPage() {
         averageSessionDuration: "12m 34s"
       }
 
+      // Generate recent activity
+      const recentActivity = [
+        ...(users?.slice(-3).map(user => ({
+          type: "user",
+          description: "New user registered",
+          timestamp: user.created_at,
+          user: user.full_name || "Anonymous"
+        })) || []),
+        ...(applications?.slice(-3).map(app => ({
+          type: "application",
+          description: "New internship application",
+          timestamp: app.applied_at,
+          user: "Student"
+        })) || []),
+        ...(videos?.slice(-3).map(video => ({
+          type: "video",
+          description: "New video uploaded",
+          timestamp: video.created_at,
+          user: "Admin"
+        })) || [])
+      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 5)
+
       setAnalyticsData({
         totalUsers: users?.length || 0,
         newUsersThisMonth: users?.filter(user => new Date(user.created_at) >= thirtyDaysAgo).length || 0,
@@ -142,7 +190,8 @@ export default function AnalyticsPage() {
         applicationStats,
         userRoles,
         videoCategories,
-        engagementMetrics
+        engagementMetrics,
+        recentActivity
       })
     } catch (error) {
       console.error("Error fetching analytics:", error)
@@ -170,7 +219,8 @@ export default function AnalyticsPage() {
       applicationStats: analyticsData.applicationStats,
       userRoles: analyticsData.userRoles,
       videoCategories: analyticsData.videoCategories,
-      engagementMetrics: analyticsData.engagementMetrics
+      engagementMetrics: analyticsData.engagementMetrics,
+      recentActivity: analyticsData.recentActivity
     }
 
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" })
@@ -202,8 +252,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Analytics & Reports</h1>
-          <p className="text-gray-600 text-sm md:text-base">Comprehensive platform analytics and insights</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Analytics Dashboard</h1>
+          <p className="text-gray-600 text-sm md:text-base">Real-time platform insights and metrics</p>
         </div>
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -225,343 +275,214 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="stat-card">
-          <CardContent className="p-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="stat-card hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-brand-secondary">Total Users</p>
-                <p className="text-xl font-bold text-brand-primary">{analyticsData.totalUsers}</p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />+{analyticsData.newUsersThisMonth} this month
-                </p>
+                <p className="text-sm font-medium text-gray-500">Total Users</p>
+                <p className="text-2xl font-bold mt-1">{analyticsData.totalUsers}</p>
+                <div className="flex items-center mt-2 text-sm text-green-600">
+                  <ArrowUpRight className="w-4 h-4 mr-1" />
+                  <span>+{analyticsData.newUsersThisMonth} this month</span>
+                </div>
               </div>
-              <div className="w-10 h-10 brand-gradient rounded-lg flex items-center justify-center shadow-brand">
-                <Users className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Users className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="stat-card">
-          <CardContent className="p-4">
+        <Card className="stat-card hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-brand-secondary">Total Videos</p>
-                <p className="text-xl font-bold text-brand-primary">{analyticsData.totalVideos}</p>
-                <p className="text-xs text-brand-secondary mt-1">Educational content</p>
+                <p className="text-sm font-medium text-gray-500">Total Videos</p>
+                <p className="text-2xl font-bold mt-1">{analyticsData.totalVideos}</p>
+                <div className="flex items-center mt-2 text-sm text-gray-500">
+                  <PlayCircle className="w-4 h-4 mr-1" />
+                  <span>Educational content</span>
+                </div>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-brand">
-                <Video className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Video className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="stat-card">
-          <CardContent className="p-4">
+        <Card className="stat-card hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-brand-secondary">Applications</p>
-                <p className="text-xl font-bold text-brand-primary">{analyticsData.totalApplications}</p>
-                <p className="text-xs text-brand-secondary mt-1">Internship applications</p>
+                <p className="text-sm font-medium text-gray-500">Applications</p>
+                <p className="text-2xl font-bold mt-1">{analyticsData.totalApplications}</p>
+                <div className="flex items-center mt-2 text-sm text-gray-500">
+                  <FileText className="w-4 h-4 mr-1" />
+                  <span>Internship applications</span>
+                </div>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-brand">
-                <FileText className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Briefcase className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="stat-card">
-          <CardContent className="p-4">
+        <Card className="stat-card hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-brand-secondary">Active Internships</p>
-                <p className="text-xl font-bold text-brand-primary">{analyticsData.activeInternships}</p>
-                <p className="text-xs text-brand-secondary mt-1">Currently available</p>
-              </div>
-              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-brand">
-                <Briefcase className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-brand-secondary">Engagement Rate</p>
-                <p className="text-xl font-bold text-brand-primary">
+                <p className="text-sm font-medium text-gray-500">Engagement Rate</p>
+                <p className="text-2xl font-bold mt-1">
                   {Math.round((analyticsData.engagementMetrics.dailyActiveUsers / analyticsData.totalUsers) * 100)}%
                 </p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  Daily active users
-                </p>
+                <div className="flex items-center mt-2 text-sm text-green-600">
+                  <Activity className="w-4 h-4 mr-1" />
+                  <span>Daily active users</span>
+                </div>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-brand">
-                <Eye className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Eye className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detailed Analytics */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 mb-2 text-xs">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* User Growth Chart */}
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>User Growth</CardTitle>
-                <CardDescription>Monthly user registration trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analyticsData.userGrowth.map((data) => (
-                    <div key={data.month} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{data.month}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full"
-                            style={{
-                              width: `${(data.users / Math.max(...analyticsData.userGrowth.map((d) => d.users))) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-600 w-12 text-right">{data.users}</span>
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* User Growth Chart */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle>User Growth</CardTitle>
+              <CardDescription>Monthly user registration trends</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyticsData.userGrowth.map((data) => (
+                  <div key={data.month} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{data.month}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-48 bg-gray-100 rounded-full h-2.5">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-orange-500 h-2.5 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(data.users / Math.max(...analyticsData.userGrowth.map((d) => d.users))) * 100}%`,
+                          }}
+                        />
                       </div>
+                      <span className="text-sm text-gray-600 w-12 text-right">{data.users}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Top Videos */}
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>Top Performing Videos</CardTitle>
-                <CardDescription>Most viewed educational content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analyticsData.topVideos.map((video, index) => (
-                    <div key={video.title} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center text-xs">
-                          {index + 1}
-                        </Badge>
-                        <span className="text-sm font-medium truncate">{video.title}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <PlayCircle className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{video.views.toLocaleString()}</span>
-                      </div>
+          {/* Top Videos */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle>Top Performing Videos</CardTitle>
+              <CardDescription>Most viewed educational content</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyticsData.topVideos.map((video, index) => (
+                  <div key={video.title} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center text-xs">
+                        {index + 1}
+                      </Badge>
+                      <span className="text-sm font-medium truncate">{video.title}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="users" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>User Demographics</CardTitle>
-                <CardDescription>User distribution by role</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analyticsData.userRoles.map((role) => (
-                    <div key={role.role} className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize">{role.role}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full"
-                            style={{
-                              width: `${(role.count / analyticsData.totalUsers) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-600 w-12 text-right">
-                          {role.count} ({Math.round((role.count / analyticsData.totalUsers) * 100)}%)
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <PlayCircle className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{video.views.toLocaleString()}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>User Activity</CardTitle>
-                <CardDescription>Recent user engagement metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Daily Active Users</span>
-                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.dailyActiveUsers}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Weekly Active Users</span>
-                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.weeklyActiveUsers}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Monthly Active Users</span>
-                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.monthlyActiveUsers}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Average Session Duration</span>
-                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.averageSessionDuration}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="content" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>Content Performance</CardTitle>
-                <CardDescription>Video engagement statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Video Views</span>
-                    <span className="text-sm text-gray-600">
-                      {analyticsData.topVideos.reduce((sum, video) => sum + video.views, 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Average Views per Video</span>
-                    <span className="text-sm text-gray-600">
-                      {Math.round(
-                        analyticsData.topVideos.reduce((sum, video) => sum + video.views, 0) / analyticsData.totalVideos
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Most Popular Category</span>
-                    <span className="text-sm text-gray-600">
-                      {analyticsData.videoCategories.sort((a, b) => b.count - a.count)[0]?.category || "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>Content by Category</CardTitle>
-                <CardDescription>Distribution of educational content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analyticsData.videoCategories.map((category) => (
-                    <div key={category.category} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />
-                        <span className="text-sm font-medium capitalize">{category.category}</span>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {category.count} videos ({Math.round((category.count / analyticsData.totalVideos) * 100)}%)
-                      </span>
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Recent Activity */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest platform events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyticsData.recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      activity.type === 'user' ? 'bg-blue-100' :
+                      activity.type === 'video' ? 'bg-purple-100' :
+                      'bg-green-100'
+                    }`}>
+                      {activity.type === 'user' ? <Users className="w-4 h-4 text-blue-600" /> :
+                       activity.type === 'video' ? <Video className="w-4 h-4 text-purple-600" /> :
+                       <Briefcase className="w-4 h-4 text-green-600" />}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="applications" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>Application Status</CardTitle>
-                <CardDescription>Internship application breakdown</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analyticsData.applicationStats.map((stat) => (
-                    <div key={stat.status} className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize">{stat.status}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              stat.status === "approved"
-                                ? "bg-green-500"
-                                : stat.status === "rejected"
-                                ? "bg-red-500"
-                                : "bg-yellow-500"
-                            }`}
-                            style={{
-                              width: `${(stat.count / Math.max(...analyticsData.applicationStats.map((s) => s.count))) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-600 w-12 text-right">
-                          {stat.count} ({Math.round((stat.count / analyticsData.totalApplications) * 100)}%)
-                        </span>
-                      </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {activity.user} • {new Date(activity.timestamp).toLocaleDateString()}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="admin-card">
-              <CardHeader>
-                <CardTitle>Application Trends</CardTitle>
-                <CardDescription>Application statistics and metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Applications</span>
-                    <span className="text-sm text-gray-600">{analyticsData.totalApplications}</span>
+          {/* Quick Stats */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+              <CardDescription>Key performance indicators</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Active Internships</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Approval Rate</span>
-                    <span className="text-sm text-gray-600">
-                      {Math.round(
-                        (analyticsData.applicationStats.find((s) => s.status === "approved")?.count || 0) /
-                          analyticsData.totalApplications *
-                          100
-                      )}
-                      %
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Active Internships</span>
-                    <span className="text-sm text-gray-600">{analyticsData.activeInternships}</span>
-                  </div>
+                  <span className="text-sm font-medium">{analyticsData.activeInternships}</span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Avg. Session</span>
+                  </div>
+                  <span className="text-sm font-medium">{analyticsData.engagementMetrics.averageSessionDuration}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Approval Rate</span>
+                  </div>
+                  <span className="text-sm font-medium">
+                    {Math.round(
+                      (analyticsData.applicationStats.find((s) => s.status === "approved")?.count || 0) /
+                        analyticsData.totalApplications *
+                        100
+                    )}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
