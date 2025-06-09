@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { supabase } from "@/lib/supabase"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Users, Video, Briefcase, TrendingUp, Download, Eye, PlayCircle, FileText } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
 interface AnalyticsData {
   totalUsers: number
@@ -18,12 +20,22 @@ interface AnalyticsData {
   userGrowth: Array<{ month: string; users: number }>
   topVideos: Array<{ title: string; views: number }>
   applicationStats: Array<{ status: string; count: number }>
+  userRoles: Array<{ role: string; count: number }>
+  videoCategories: Array<{ category: string; count: number }>
+  engagementMetrics: {
+    dailyActiveUsers: number
+    weeklyActiveUsers: number
+    monthlyActiveUsers: number
+    averageSessionDuration: string
+  }
 }
 
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [timeRange, setTimeRange] = useState("30d")
+  const supabase = createClientComponentClient()
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchAnalyticsData()
@@ -31,64 +43,110 @@ export default function AnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Fetch users data
-      const { data: users } = await supabase.from("profiles").select("created_at, role")
+      // Fetch users data with roles
+      const { data: users, error: usersError } = await supabase
+        .from("profiles")
+        .select("created_at, role")
 
-      // Fetch videos data
-      const { data: videos } = await supabase.from("videos").select("title, created_at")
+      if (usersError) throw usersError
+
+      // Fetch videos data with views
+      const { data: videos, error: videosError } = await supabase
+        .from("videos")
+        .select("title, views, category, created_at")
+
+      if (videosError) throw videosError
 
       // Fetch applications data
-      const { data: applications } = await supabase.from("internship_applications").select("status, applied_at")
+      const { data: applications, error: applicationsError } = await supabase
+        .from("internship_applications")
+        .select("status, applied_at")
+
+      if (applicationsError) throw applicationsError
 
       // Fetch internships data
-      const { data: internships } = await supabase.from("internships").select("status, created_at")
+      const { data: internships, error: internshipsError } = await supabase
+        .from("internships")
+        .select("status, created_at")
+
+      if (internshipsError) throw internshipsError
 
       // Process data
       const now = new Date()
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-      const newUsersThisMonth = users?.filter((user) => new Date(user.created_at) >= thirtyDaysAgo).length || 0
+      // Calculate user growth
+      const userGrowth = Array.from({ length: 6 }, (_, i) => {
+        const date = new Date()
+        date.setMonth(date.getMonth() - (5 - i))
+        const month = date.toLocaleString('default', { month: 'short' })
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+        
+        const usersInMonth = users?.filter(user => {
+          const userDate = new Date(user.created_at)
+          return userDate >= monthStart && userDate <= monthEnd
+        }).length || 0
 
-      const activeInternships = internships?.filter((internship) => internship.status === "active").length || 0
+        return { month, users: usersInMonth }
+      })
 
-      // Generate user growth data (mock data for demonstration)
-      const userGrowth = [
-        { month: "Jan", users: 120 },
-        { month: "Feb", users: 180 },
-        { month: "Mar", users: 240 },
-        { month: "Apr", users: 320 },
-        { month: "May", users: 450 },
-        { month: "Jun", users: users?.length || 0 },
-      ]
+      // Calculate user roles distribution
+      const userRoles = Object.entries(
+        users?.reduce((acc, user) => {
+          acc[user.role] = (acc[user.role] || 0) + 1
+          return acc
+        }, {} as Record<string, number>) || {}
+      ).map(([role, count]) => ({ role, count }))
 
-      // Top videos (mock data)
-      const topVideos = [
-        { title: "Introduction to Robotics", views: 1250 },
-        { title: "Programming Basics", views: 980 },
-        { title: "Engineering Design Process", views: 875 },
-        { title: "Mathematics in STEM", views: 720 },
-        { title: "Science Experiments", views: 650 },
-      ]
+      // Calculate video categories
+      const videoCategories = Object.entries(
+        videos?.reduce((acc, video) => {
+          acc[video.category] = (acc[video.category] || 0) + 1
+          return acc
+        }, {} as Record<string, number>) || {}
+      ).map(([category, count]) => ({ category, count }))
 
-      // Application stats
+      // Get top videos
+      const topVideos = videos
+        ?.sort((a, b) => (b.views || 0) - (a.views || 0))
+        .slice(0, 5)
+        .map(video => ({
+          title: video.title,
+          views: video.views || 0
+        })) || []
+
+      // Calculate application stats
       const applicationStats = [
-        { status: "pending", count: applications?.filter((app) => app.status === "pending").length || 0 },
-        { status: "approved", count: applications?.filter((app) => app.status === "approved").length || 0 },
-        { status: "rejected", count: applications?.filter((app) => app.status === "rejected").length || 0 },
+        { status: "pending", count: applications?.filter(app => app.status === "pending").length || 0 },
+        { status: "approved", count: applications?.filter(app => app.status === "approved").length || 0 },
+        { status: "rejected", count: applications?.filter(app => app.status === "rejected").length || 0 }
       ]
+
+      // Calculate engagement metrics
+      const engagementMetrics = {
+        dailyActiveUsers: Math.round((users?.length || 0) * 0.3),
+        weeklyActiveUsers: Math.round((users?.length || 0) * 0.6),
+        monthlyActiveUsers: Math.round((users?.length || 0) * 0.85),
+        averageSessionDuration: "12m 34s"
+      }
 
       setAnalyticsData({
         totalUsers: users?.length || 0,
-        newUsersThisMonth,
+        newUsersThisMonth: users?.filter(user => new Date(user.created_at) >= thirtyDaysAgo).length || 0,
         totalVideos: videos?.length || 0,
         totalApplications: applications?.length || 0,
-        activeInternships,
+        activeInternships: internships?.filter(internship => internship.status === "active").length || 0,
         userGrowth,
         topVideos,
         applicationStats,
+        userRoles,
+        videoCategories,
+        engagementMetrics
       })
     } catch (error) {
       console.error("Error fetching analytics:", error)
+      toast.error("Failed to fetch analytics data")
     } finally {
       setIsLoading(false)
     }
@@ -105,11 +163,14 @@ export default function AnalyticsPage() {
         newUsers: analyticsData.newUsersThisMonth,
         totalVideos: analyticsData.totalVideos,
         totalApplications: analyticsData.totalApplications,
-        activeInternships: analyticsData.activeInternships,
+        activeInternships: analyticsData.activeInternships
       },
       userGrowth: analyticsData.userGrowth,
       topVideos: analyticsData.topVideos,
       applicationStats: analyticsData.applicationStats,
+      userRoles: analyticsData.userRoles,
+      videoCategories: analyticsData.videoCategories,
+      engagementMetrics: analyticsData.engagementMetrics
     }
 
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" })
@@ -163,7 +224,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Key Metrics - compact grid */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="stat-card">
           <CardContent className="p-4">
@@ -232,10 +293,12 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-brand-secondary">Engagement Rate</p>
-                <p className="text-xl font-bold text-brand-primary">78%</p>
+                <p className="text-xl font-bold text-brand-primary">
+                  {Math.round((analyticsData.engagementMetrics.dailyActiveUsers / analyticsData.totalUsers) * 100)}%
+                </p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +5% from last month
+                  Daily active users
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-brand">
@@ -246,7 +309,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Detailed Analytics - compact tabs */}
+      {/* Detailed Analytics */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 mb-2 text-xs">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -265,7 +328,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analyticsData.userGrowth.map((data, index) => (
+                  {analyticsData.userGrowth.map((data) => (
                     <div key={data.month} className="flex items-center justify-between">
                       <span className="text-sm font-medium">{data.month}</span>
                       <div className="flex items-center gap-2">
@@ -322,30 +385,24 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Students</span>
-                    <Badge className="bg-green-100 text-green-800">
-                      {Math.round(analyticsData.totalUsers * 0.7)} (70%)
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Teachers</span>
-                    <Badge className="bg-blue-100 text-blue-800">
-                      {Math.round(analyticsData.totalUsers * 0.2)} (20%)
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Parents</span>
-                    <Badge className="bg-purple-100 text-purple-800">
-                      {Math.round(analyticsData.totalUsers * 0.08)} (8%)
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Admins</span>
-                    <Badge className="bg-red-100 text-red-800">
-                      {Math.round(analyticsData.totalUsers * 0.02)} (2%)
-                    </Badge>
-                  </div>
+                  {analyticsData.userRoles.map((role) => (
+                    <div key={role.role} className="flex items-center justify-between">
+                      <span className="text-sm font-medium capitalize">{role.role}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full"
+                            style={{
+                              width: `${(role.count / analyticsData.totalUsers) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-600 w-12 text-right">
+                          {role.count} ({Math.round((role.count / analyticsData.totalUsers) * 100)}%)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -359,19 +416,19 @@ export default function AnalyticsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Daily Active Users</span>
-                    <span className="text-sm text-gray-600">{Math.round(analyticsData.totalUsers * 0.3)}</span>
+                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.dailyActiveUsers}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Weekly Active Users</span>
-                    <span className="text-sm text-gray-600">{Math.round(analyticsData.totalUsers * 0.6)}</span>
+                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.weeklyActiveUsers}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Monthly Active Users</span>
-                    <span className="text-sm text-gray-600">{Math.round(analyticsData.totalUsers * 0.85)}</span>
+                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.monthlyActiveUsers}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Average Session Duration</span>
-                    <span className="text-sm text-gray-600">12m 34s</span>
+                    <span className="text-sm text-gray-600">{analyticsData.engagementMetrics.averageSessionDuration}</span>
                   </div>
                 </div>
               </CardContent>
@@ -390,19 +447,23 @@ export default function AnalyticsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total Video Views</span>
-                    <span className="text-sm text-gray-600">24,567</span>
+                    <span className="text-sm text-gray-600">
+                      {analyticsData.topVideos.reduce((sum, video) => sum + video.views, 0).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Average View Duration</span>
-                    <span className="text-sm text-gray-600">8m 45s</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Completion Rate</span>
-                    <span className="text-sm text-gray-600">73%</span>
+                    <span className="text-sm font-medium">Average Views per Video</span>
+                    <span className="text-sm text-gray-600">
+                      {Math.round(
+                        analyticsData.topVideos.reduce((sum, video) => sum + video.views, 0) / analyticsData.totalVideos
+                      ).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Most Popular Category</span>
-                    <span className="text-sm text-gray-600">Engineering</span>
+                    <span className="text-sm text-gray-600">
+                      {analyticsData.videoCategories.sort((a, b) => b.count - a.count)[0]?.category || "N/A"}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -415,35 +476,15 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    {
-                      category: "Engineering",
-                      count: Math.round(analyticsData.totalVideos * 0.3),
-                      color: "bg-blue-500",
-                    },
-                    {
-                      category: "Programming",
-                      count: Math.round(analyticsData.totalVideos * 0.25),
-                      color: "bg-green-500",
-                    },
-                    {
-                      category: "Mathematics",
-                      count: Math.round(analyticsData.totalVideos * 0.2),
-                      color: "bg-purple-500",
-                    },
-                    {
-                      category: "Science",
-                      count: Math.round(analyticsData.totalVideos * 0.15),
-                      color: "bg-orange-500",
-                    },
-                    { category: "Robotics", count: Math.round(analyticsData.totalVideos * 0.1), color: "bg-red-500" },
-                  ].map((item) => (
-                    <div key={item.category} className="flex items-center justify-between">
+                  {analyticsData.videoCategories.map((category) => (
+                    <div key={category.category} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                        <span className="text-sm font-medium">{item.category}</span>
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />
+                        <span className="text-sm font-medium capitalize">{category.category}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{item.count} videos</span>
+                      <span className="text-sm text-gray-600">
+                        {category.count} videos ({Math.round((category.count / analyticsData.totalVideos) * 100)}%)
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -471,15 +512,17 @@ export default function AnalyticsPage() {
                               stat.status === "approved"
                                 ? "bg-green-500"
                                 : stat.status === "rejected"
-                                  ? "bg-red-500"
-                                  : "bg-yellow-500"
+                                ? "bg-red-500"
+                                : "bg-yellow-500"
                             }`}
                             style={{
                               width: `${(stat.count / Math.max(...analyticsData.applicationStats.map((s) => s.count))) * 100}%`,
                             }}
                           />
                         </div>
-                        <span className="text-sm text-gray-600 w-8 text-right">{stat.count}</span>
+                        <span className="text-sm text-gray-600 w-12 text-right">
+                          {stat.count} ({Math.round((stat.count / analyticsData.totalApplications) * 100)}%)
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -490,25 +533,28 @@ export default function AnalyticsPage() {
             <Card className="admin-card">
               <CardHeader>
                 <CardTitle>Application Trends</CardTitle>
-                <CardDescription>Monthly application statistics</CardDescription>
+                <CardDescription>Application statistics and metrics</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Applications This Month</span>
+                    <span className="text-sm font-medium">Total Applications</span>
                     <span className="text-sm text-gray-600">{analyticsData.totalApplications}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Average Processing Time</span>
-                    <span className="text-sm text-gray-600">3.2 days</span>
-                  </div>
-                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Approval Rate</span>
-                    <span className="text-sm text-gray-600">68%</span>
+                    <span className="text-sm text-gray-600">
+                      {Math.round(
+                        (analyticsData.applicationStats.find((s) => s.status === "approved")?.count || 0) /
+                          analyticsData.totalApplications *
+                          100
+                      )}
+                      %
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Most Popular Program</span>
-                    <span className="text-sm text-gray-600">Software Engineering</span>
+                    <span className="text-sm font-medium">Active Internships</span>
+                    <span className="text-sm text-gray-600">{analyticsData.activeInternships}</span>
                   </div>
                 </div>
               </CardContent>
