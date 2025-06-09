@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 
 // Validate environment variables
 const supabaseUrl = 'https://qnuevynptgkoivekuzer.supabase.co'
@@ -47,24 +46,6 @@ export const createServerClient = () => {
     },
     global: {
       headers: {
-        "x-application-name": "novakinetix",
-      },
-    },
-  })
-}
-
-// Create a server client with cookies for middleware
-export const createServerClientWithCookies = () => {
-  const cookieStore = cookies()
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-    global: {
-      headers: {
-        cookie: cookieStore.toString(),
         "x-application-name": "novakinetix",
       },
     },

@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { exportUserData } from "@/lib/profile-actions"
-import { updateProfile, changePassword } from "@/lib/enhanced-auth-actions"
+import { updateProfile, changePassword } from "@/lib/auth"
 import {
   User,
   Mail,
