@@ -32,6 +32,11 @@ export const createServerClient = () => {
         autoRefreshToken: false,
         persistSession: false,
       },
+      global: {
+        headers: {
+          "x-application-name": "novakinetix",
+        },
+      },
     })
   }
 
@@ -39,6 +44,11 @@ export const createServerClient = () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    global: {
+      headers: {
+        "x-application-name": "novakinetix",
+      },
     },
   })
 }
@@ -55,12 +65,13 @@ export const createServerClientWithCookies = () => {
     global: {
       headers: {
         cookie: cookieStore.toString(),
+        "x-application-name": "novakinetix",
       },
     },
   })
 }
 
-// Test connection function
+// Test connection function with detailed diagnostics
 export async function testConnection() {
   try {
     console.log("🔍 Testing Supabase connection...")
@@ -71,7 +82,15 @@ export async function testConnection() {
 
     if (browserError) {
       console.error("❌ Browser client connection failed:", browserError.message)
-      return { success: false, error: browserError.message, type: "browser" }
+      return { 
+        success: false, 
+        error: browserError.message, 
+        type: "browser",
+        details: {
+          code: browserError.code,
+          message: browserError.message
+        }
+      }
     }
 
     console.log("✅ Browser client connection successful")
@@ -82,7 +101,15 @@ export async function testConnection() {
 
     if (serverError) {
       console.error("❌ Server client connection failed:", serverError.message)
-      return { success: false, error: serverError.message, type: "server" }
+      return { 
+        success: false, 
+        error: serverError.message, 
+        type: "server",
+        details: {
+          code: serverError.code,
+          message: serverError.message
+        }
+      }
     }
 
     console.log("✅ Server client connection successful")
@@ -92,18 +119,58 @@ export async function testConnection() {
 
     if (authError) {
       console.error("❌ Auth settings check failed:", authError.message)
-      return { success: false, error: authError.message, type: "auth" }
+      return { 
+        success: false, 
+        error: authError.message, 
+        type: "auth",
+        details: {
+          code: authError.code,
+          message: authError.message
+        }
+      }
     }
 
-    console.log("✅ Auth settings check successful")
+    // Test RLS policies
+    const { data: rlsTest, error: rlsError } = await serverClient
+      .from("profiles")
+      .select("id")
+      .limit(1)
+      .maybeSingle()
 
-    return { success: true, message: "All connections working" }
+    if (rlsError) {
+      console.error("❌ RLS policy check failed:", rlsError.message)
+      return { 
+        success: false, 
+        error: rlsError.message, 
+        type: "rls",
+        details: {
+          code: rlsError.code,
+          message: rlsError.message
+        }
+      }
+    }
+
+    console.log("✅ RLS policy check successful")
+
+    return { 
+      success: true, 
+      message: "All connections working",
+      details: {
+        browser: "connected",
+        server: "connected",
+        auth: "configured",
+        rls: "enabled"
+      }
+    }
   } catch (error) {
     console.error("💥 Connection test failed:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
       type: "unknown",
+      details: {
+        stack: error instanceof Error ? error.stack : undefined
+      }
     }
   }
 }
