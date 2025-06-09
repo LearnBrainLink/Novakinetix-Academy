@@ -1,18 +1,21 @@
 "use client"
 
+import React from 'react';
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Plus, Search, Trash2, Edit2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Briefcase, Edit } from 'lucide-react';
 
 interface Internship {
   id: string
@@ -188,179 +191,66 @@ export default function AdminInternshipsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Manage Internships</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Internship
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingInternship ? "Edit Internship" : "Add New Internship"}</DialogTitle>
-              <DialogDescription>
-                Fill in the details for the internship position.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="requirements">Requirements (one per line)</Label>
-                <Textarea
-                  id="requirements"
-                  value={formData.requirements}
-                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="type">Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value as "remote" | "hybrid" | "onsite" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="remote">Remote</SelectItem>
-                    <SelectItem value="hybrid">Hybrid</SelectItem>
-                    <SelectItem value="onsite">Onsite</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="duration">Duration</Label>
-                <Input
-                  id="duration"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="stipend">Stipend</Label>
-                <Input
-                  id="stipend"
-                  value={formData.stipend}
-                  onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                  required
-                />
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Internship"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Internship Management</h1>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Internship
+        </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search internships..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Internships</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search internships..." className="pl-8" />
+            </div>
+            <Button variant="outline">Filter</Button>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredInternships.map((internship) => (
-          <Card key={internship.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl">{internship.title}</CardTitle>
-                  <CardDescription>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline">{internship.type}</Badge>
-                      <Badge variant="secondary">{internship.location}</Badge>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInternships.map((internship) => (
+                <TableRow key={internship.id}>
+                  <TableCell>{internship.title}</TableCell>
+                  <TableCell>{internship.location}</TableCell>
+                  <TableCell>{internship.duration}</TableCell>
+                  <TableCell>
+                    <Badge variant="default">Active</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Briefcase className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(internship)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(internship.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4 line-clamp-3">{internship.description}</p>
-              <div className="space-y-2">
-                <h3 className="font-semibold">Requirements:</h3>
-                <ul className="list-disc list-inside">
-                  {internship.requirements.map((req, index) => (
-                    <li key={index} className="text-gray-600">{req}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-4 space-y-2">
-                <p><span className="font-semibold">Duration:</span> {internship.duration}</p>
-                <p><span className="font-semibold">Stipend:</span> {internship.stipend}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredInternships.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No internships found.</p>
-        </div>
-      )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
