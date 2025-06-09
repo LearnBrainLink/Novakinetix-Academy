@@ -27,6 +27,17 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react"
+import dynamic from "next/dynamic"
+import AdminNavbar from "@/components/admin/AdminNavbar"
+
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false })
+const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false })
+const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false })
+const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false })
+const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false })
+const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false })
+const BarChart = dynamic(() => import("recharts").then(m => m.BarChart), { ssr: false })
+const Bar = dynamic(() => import("recharts").then(m => m.Bar), { ssr: false })
 
 interface AnalyticsData {
   totalUsers: number
@@ -281,6 +292,8 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white px-2 md:px-0">
+      <AdminNavbar />
+      <div className="h-16" /> {/* Spacer for navbar */}
       {/* Header */}
       <div className="max-w-7xl mx-auto pt-8 pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -359,31 +372,25 @@ export default function AnalyticsPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        {/* Left: User Growth & Top Videos */}
+        {/* Left: User Growth & Top Videos & Charts */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* User Growth */}
+          {/* User Growth Chart */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className="w-5 h-5 text-blue-500" />
               <span className="font-semibold text-blue-800">User Growth</span>
             </div>
             <div className="text-xs text-blue-400 mb-4">Monthly user registration trends</div>
-            <div className="space-y-3">
-              {isLoading ? (
-                <div className="h-32 flex items-center justify-center">Loading...</div>
-              ) : (
-                analyticsData.userGrowth.map((data, idx) => (
-                  <div key={data.month} className="flex items-center gap-4">
-                    <span className="w-10 text-blue-700 font-medium">{data.month}</span>
-                    <div className="flex-1 bg-blue-50 rounded-full h-3 relative overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-blue-700 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${(data.users / Math.max(...analyticsData.userGrowth.map((d) => d.users), 1)) * 100}%` }}
-                      ></div>
-                    </div>
-                    <span className="w-12 text-right text-blue-700 font-semibold">{data.users}</span>
-                  </div>
-                ))
+            <div className="h-56 w-full">
+              {!isLoading && analyticsData.userGrowth && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analyticsData.userGrowth} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="month" stroke="#2563eb" fontSize={12} />
+                    <YAxis allowDecimals={false} stroke="#2563eb" fontSize={12} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="users" stroke="#2563eb" strokeWidth={3} dot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>
