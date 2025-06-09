@@ -20,61 +20,70 @@ const roleBasedRoutes = {
   parent: ["/dashboard"],
 }
 
-export async function middleware(request: NextRequest) {
-  try {
-    // Create a Supabase client configured to use cookies
-    const res = NextResponse.next()
-    const supabase = createMiddlewareClient({ req: request, res })
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
 
-    // Refresh session if expired - required for Server Components
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-    // Get the pathname of the request
-    const path = request.nextUrl.pathname
-
-    // Check if the route is public
-    if (publicRoutes.includes(path)) {
-      return res
-    }
-
-    // If no session and trying to access protected route, redirect to login
-    if (!session) {
-      const redirectUrl = new URL("/login", request.url)
-      redirectUrl.searchParams.set("redirectTo", path)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Get user role from the database
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
-      .single()
-
-    const userRole = profile?.role || "student"
-
-    // Check if user has access to the requested route
-    const hasAccess = Object.entries(roleBasedRoutes).some(([role, routes]) => {
-      if (role === userRole) {
-        return routes.some((route) => path.startsWith(route))
-      }
-      return false
-    })
-
-    // If user doesn't have access, redirect to their dashboard
-    if (!hasAccess) {
-      const dashboardUrl = roleBasedRoutes[userRole as keyof typeof roleBasedRoutes]?.[0] || "/"
-      return NextResponse.redirect(new URL(dashboardUrl, request.url))
-    }
-
-    return res
-  } catch (error) {
-    console.error("Middleware error:", error)
-    // In case of error, redirect to login
-    return NextResponse.redirect(new URL("/login", request.url))
+  // If user is not signed in and the current path is not /login,
+  // redirect the user to /login
+  if (!session && req.nextUrl.pathname.startsWith('/admin')) {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = '/login'
+    redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
   }
+
+  // If user is signed in and the current path is /login,
+  // redirect the user to /admin
+  if (session && req.nextUrl.pathname === '/login') {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = '/admin'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Get the pathname of the request
+  const path = req.nextUrl.pathname
+
+  // Check if the route is public
+  if (publicRoutes.includes(path)) {
+    return res
+  }
+
+  // If no session and trying to access protected route, redirect to login
+  if (!session) {
+    const redirectUrl = new URL("/login", req.url)
+    redirectUrl.searchParams.set("redirectTo", path)
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Get user role from the database
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .single()
+
+  const userRole = profile?.role || "student"
+
+  // Check if user has access to the requested route
+  const hasAccess = Object.entries(roleBasedRoutes).some(([role, routes]) => {
+    if (role === userRole) {
+      return routes.some((route) => path.startsWith(route))
+    }
+    return false
+  })
+
+  // If user doesn't have access, redirect to their dashboard
+  if (!hasAccess) {
+    const dashboardUrl = roleBasedRoutes[userRole as keyof typeof roleBasedRoutes]?.[0] || "/"
+    return NextResponse.redirect(new URL(dashboardUrl, req.url))
+  }
+
+  return res
 }
 
 // Specify which routes this middleware should run on
@@ -88,5 +97,7 @@ export const config = {
      * - public folder
      */
     "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+    '/admin/:path*',
+    '/login',
   ],
 } 
