@@ -13,7 +13,8 @@
     "supabase:stop": "supabase stop",
     "supabase:db:push": "supabase db push",
     "supabase:db:reset": "supabase db reset",
-    "supabase:link": "supabase link --project-ref qnuevynptgkoivekuzer --access-token sbp_9a19e77fcc89fc3234d646b3289aa184c39f5d59"
+    "supabase:link": "supabase link --project-ref qnuevynptgkoivekuzer --access-token sbp_9a19e77fcc89fc3234d646b3289aa184c39f5d59",
+    "test:supabase": "node scripts/test-connection.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
