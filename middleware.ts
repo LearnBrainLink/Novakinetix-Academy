@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server"
 const publicRoutes = [
   "/",
   "/login",
-  "/sign-up",
+  "/signup",
   "/reset-password",
   "/auth/callback",
   "/auth/auth-code-error",
@@ -17,6 +17,7 @@ const roleBasedRoutes = {
   admin: ["/admin"],
   teacher: ["/teacher-dashboard"],
   student: ["/student-dashboard"],
+  parent: ["/dashboard"],
 }
 
 export async function middleware(request: NextRequest) {

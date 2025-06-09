@@ -248,9 +248,9 @@ export class RoleManager {
       case "student":
         return "/student-dashboard"
       case "parent":
-        return "/parent-dashboard"
+        return "/dashboard"
       default:
-        return "/student-dashboard"
+        return "/dashboard"
     }
   }
 
