@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "supabase:install": "powershell -ExecutionPolicy Bypass -File scripts/install-supabase.ps1",
+    "supabase:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-supabase.ps1",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:db:push": "supabase db push",
+    "supabase:db:reset": "supabase db reset",
+    "supabase:link": "supabase link --project-ref qnuevynptgkoivekuzer --access-token sbp_9a19e77fcc89fc3234d646b3289aa184c39f5d59"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

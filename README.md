@@ -39,8 +39,10 @@ pnpm install
 3. Set up environment variables:
 Create a `.env.local` file in the root directory with the following variables:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=https://qnuevynptgkoivekuzer.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_SITE_URL=https://v0-empowering-young-engineers-agsvrn927.vercel.app
 ```
 
 4. Run the development server:
@@ -73,3 +75,88 @@ pnpm dev
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Supabase Setup
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://qnuevynptgkoivekuzer.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_SITE_URL=https://v0-empowering-young-engineers-agsvrn927.vercel.app
+```
+
+### GitHub Secrets
+
+Add the following secrets to your GitHub repository:
+
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+- `SUPABASE_ACCESS_TOKEN`: Your Supabase access token
+
+### Local Development
+
+1. Install Supabase CLI:
+```bash
+npm install -g supabase
+```
+
+2. Link your project:
+```bash
+supabase link --project-ref qnuevynptgkoivekuzer
+```
+
+3. Start local development:
+```bash
+supabase start
+```
+
+### Database Migrations
+
+1. Create a new migration:
+```bash
+supabase migration new migration_name
+```
+
+2. Apply migrations:
+```bash
+supabase db push
+```
+
+### Authentication
+
+The project uses Supabase Auth with the following features:
+
+- Email/Password authentication
+- Social login (Google, GitHub)
+- Role-based access control
+- Email verification
+- Session management
+
+### Database Schema
+
+The database includes the following tables:
+
+- `profiles`: User profiles with role information
+- `user_activities`: User activity logging
+
+### Row Level Security
+
+RLS policies are implemented for:
+
+- Profile access control
+- Activity logging
+- Admin privileges
+
+### Testing
+
+Run the connection test:
+```bash
+npm run test:connection
+```
+
+Visit `/test-connection` to verify the Supabase setup.
