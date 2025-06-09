@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -52,21 +53,52 @@ interface AnalyticsData {
   }>
 }
 
+function StatCard({ title, value, icon, subtitle, color, growth }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6 flex-1 min-w-[200px] flex flex-col justify-between border border-blue-100">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-medium text-blue-700 flex items-center gap-1">{title}</div>
+          <div className="text-2xl font-bold text-blue-900 mt-1">{value}</div>
+          {subtitle && <div className="text-xs text-blue-400 mt-1 flex items-center gap-1">{icon}{subtitle}</div>}
+          {growth !== undefined && (
+            <div className="flex items-center gap-1 text-xs text-green-600 mt-2">
+              <ArrowUpRight className="w-4 h-4" />+{growth} this month
+            </div>
+          )}
+        </div>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md ${color}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActivityIcon({ type }) {
+  if (type === "user") return <Users className="w-5 h-5 text-blue-600" />
+  if (type === "video") return <Video className="w-5 h-5 text-purple-600" />
+  if (type === "application") return <Briefcase className="w-5 h-5 text-green-600" />
+  return <FileText className="w-5 h-5 text-gray-400" />
+}
+
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState("30d")
-  const [selectedMetric, setSelectedMetric] = useState("users")
+  const [timeRange, setTimeRange] = useState("7d")
+  const router = useRouter()
   const supabase = createClientComponentClient()
   const { user } = useAuth()
 
   useEffect(() => {
     fetchAnalyticsData()
-    const interval = setInterval(fetchAnalyticsData, 30000) // Refresh every 30 seconds
-    return () => clearInterval(interval)
+    // Optionally, refresh every 30s
+    // const interval = setInterval(fetchAnalyticsData, 30000)
+    // return () => clearInterval(interval)
   }, [timeRange])
 
   const fetchAnalyticsData = async () => {
+    setIsLoading(true)
     try {
       // Fetch users data with roles
       const { data: users, error: usersError } = await supabase
@@ -150,7 +182,7 @@ export default function AnalyticsPage() {
 
       // Calculate engagement metrics
       const engagementMetrics = {
-        dailyActiveUsers: Math.round((users?.length || 0) * 0.3),
+        dailyActiveUsers: Math.round((users?.length || 0) * 0.34),
         weeklyActiveUsers: Math.round((users?.length || 0) * 0.6),
         monthlyActiveUsers: Math.round((users?.length || 0) * 0.85),
         averageSessionDuration: "12m 34s"
@@ -158,23 +190,23 @@ export default function AnalyticsPage() {
 
       // Generate recent activity
       const recentActivity = [
-        ...(users?.slice(-3).map(user => ({
+        ...(users?.slice(-2).map(user => ({
           type: "user",
           description: "New user registered",
           timestamp: user.created_at,
           user: user.full_name || "Anonymous"
         })) || []),
-        ...(applications?.slice(-3).map(app => ({
-          type: "application",
-          description: "New internship application",
-          timestamp: app.applied_at,
-          user: "Student"
-        })) || []),
-        ...(videos?.slice(-3).map(video => ({
+        ...(videos?.slice(-2).map(video => ({
           type: "video",
           description: "New video uploaded",
           timestamp: video.created_at,
           user: "Admin"
+        })) || []),
+        ...(applications?.slice(-2).map(app => ({
+          type: "application",
+          description: "New internship application",
+          timestamp: app.applied_at,
+          user: "Student"
         })) || [])
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, 5)
@@ -248,239 +280,198 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 min-h-screen overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white px-2 md:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-gray-600 text-sm md:text-base">Real-time platform insights and metrics</p>
+      <div className="max-w-7xl mx-auto pt-8 pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Logo" className="h-12 w-12" />
+          <div>
+            <h1 className="text-3xl font-bold text-blue-800">Analytics Dashboard</h1>
+            <p className="text-blue-500 text-sm">Real-time platform insights and metrics</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={exportReport} variant="outline" className="px-2 py-1 text-sm">
-            <Download className="w-4 h-4 mr-1" />
-            Export
-          </Button>
+        <div className="flex gap-2 items-center">
+          <select
+            className="border border-blue-200 rounded-lg px-3 py-2 text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm shadow-sm"
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+          >
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="1y">Last year</option>
+          </select>
+          <button
+            onClick={exportReport}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm text-sm font-medium"
+          >
+            <Eye className="w-4 h-4" /> Export
+          </button>
+          <button
+            onClick={() => router.push("/admin")}
+            className="ml-2 bg-white border border-blue-200 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-50 text-sm font-medium"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="stat-card hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Users</p>
-                <p className="text-2xl font-bold mt-1">{analyticsData.totalUsers}</p>
-                <div className="flex items-center mt-2 text-sm text-green-600">
-                  <ArrowUpRight className="w-4 h-4 mr-1" />
-                  <span>+{analyticsData.newUsersThisMonth} this month</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Videos</p>
-                <p className="text-2xl font-bold mt-1">{analyticsData.totalVideos}</p>
-                <div className="flex items-center mt-2 text-sm text-gray-500">
-                  <PlayCircle className="w-4 h-4 mr-1" />
-                  <span>Educational content</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Video className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Applications</p>
-                <p className="text-2xl font-bold mt-1">{analyticsData.totalApplications}</p>
-                <div className="flex items-center mt-2 text-sm text-gray-500">
-                  <FileText className="w-4 h-4 mr-1" />
-                  <span>Internship applications</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Briefcase className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Engagement Rate</p>
-                <p className="text-2xl font-bold mt-1">
-                  {Math.round((analyticsData.engagementMetrics.dailyActiveUsers / analyticsData.totalUsers) * 100)}%
-                </p>
-                <div className="flex items-center mt-2 text-sm text-green-600">
-                  <Activity className="w-4 h-4 mr-1" />
-                  <span>Daily active users</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Eye className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Cards */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        {isLoading ? (
+          <div className="col-span-4 flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <>
+            <StatCard
+              title="Total Users"
+              value={analyticsData.totalUsers.toLocaleString()}
+              icon={<Users className="w-6 h-6" />}
+              subtitle={""}
+              color="bg-blue-100"
+              growth={analyticsData.newUsersThisMonth}
+            />
+            <StatCard
+              title="Total Videos"
+              value={analyticsData.totalVideos.toLocaleString()}
+              icon={<Video className="w-6 h-6" />}
+              subtitle={<><PlayCircle className="w-4 h-4 inline-block mr-1" />Educational content</>}
+              color="bg-purple-100"
+            />
+            <StatCard
+              title="Applications"
+              value={analyticsData.totalApplications.toLocaleString()}
+              icon={<Briefcase className="w-6 h-6" />}
+              subtitle={<><FileText className="w-4 h-4 inline-block mr-1" />Internship applications</>}
+              color="bg-teal-100"
+            />
+            <StatCard
+              title="Engagement Rate"
+              value={Math.round((analyticsData.engagementMetrics.dailyActiveUsers / analyticsData.totalUsers) * 100) + "%"}
+              icon={<Eye className="w-6 h-6" />}
+              subtitle={<span>Daily active users</span>}
+              color="bg-green-100"
+            />
+          </>
+        )}
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* User Growth Chart */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>User Growth</CardTitle>
-              <CardDescription>Monthly user registration trends</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData.userGrowth.map((data) => (
-                  <div key={data.month} className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{data.month}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-48 bg-gray-100 rounded-full h-2.5">
-                        <div
-                          className="bg-gradient-to-r from-red-500 to-orange-500 h-2.5 rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(data.users / Math.max(...analyticsData.userGrowth.map((d) => d.users))) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-600 w-12 text-right">{data.users}</span>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Left: User Growth & Top Videos */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* User Growth */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-blue-800">User Growth</span>
+            </div>
+            <div className="text-xs text-blue-400 mb-4">Monthly user registration trends</div>
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">Loading...</div>
+              ) : (
+                analyticsData.userGrowth.map((data, idx) => (
+                  <div key={data.month} className="flex items-center gap-4">
+                    <span className="w-10 text-blue-700 font-medium">{data.month}</span>
+                    <div className="flex-1 bg-blue-50 rounded-full h-3 relative overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-blue-400 to-blue-700 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${(data.users / Math.max(...analyticsData.userGrowth.map((d) => d.users), 1)) * 100}%` }}
+                      ></div>
                     </div>
+                    <span className="w-12 text-right text-blue-700 font-semibold">{data.users}</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                ))
+              )}
+            </div>
+          </div>
 
-          {/* Top Videos */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>Top Performing Videos</CardTitle>
-              <CardDescription>Most viewed educational content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData.topVideos.map((video, index) => (
-                  <div key={video.title} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center text-xs">
-                        {index + 1}
-                      </Badge>
-                      <span className="text-sm font-medium truncate">{video.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <PlayCircle className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{video.views.toLocaleString()}</span>
+          {/* Top Performing Videos */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <PlayCircle className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-blue-800">Top Performing Videos</span>
+            </div>
+            <div className="text-xs text-blue-400 mb-4">Most viewed educational content</div>
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">Loading...</div>
+              ) : (
+                analyticsData.topVideos.map((video, idx) => (
+                  <div key={video.title} className="flex items-center gap-4 py-2 px-2 rounded-lg hover:bg-blue-50 transition-colors">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-base ${[
+                      "bg-yellow-200 text-yellow-700",
+                      "bg-gray-200 text-gray-700",
+                      "bg-orange-200 text-orange-700",
+                      "bg-blue-200 text-blue-700",
+                      "bg-purple-200 text-purple-700",
+                    ][idx]}`}>{idx + 1}</div>
+                    <span className="flex-1 text-blue-900 font-medium truncate">{video.title}</span>
+                    <div className="flex items-center gap-1 text-blue-500 font-semibold">
+                      <Eye className="w-4 h-4" />
+                      <span>{video.views.toLocaleString()}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
+        {/* Right: Recent Activity & Quick Stats */}
+        <div className="flex flex-col gap-6">
           {/* Recent Activity */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest platform events</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analyticsData.recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      activity.type === 'user' ? 'bg-blue-100' :
-                      activity.type === 'video' ? 'bg-purple-100' :
-                      'bg-green-100'
-                    }`}>
-                      {activity.type === 'user' ? <Users className="w-4 h-4 text-blue-600" /> :
-                       activity.type === 'video' ? <Video className="w-4 h-4 text-purple-600" /> :
-                       <Briefcase className="w-4 h-4 text-green-600" />}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-blue-800">Recent Activity</span>
+            </div>
+            <div className="text-xs text-blue-400 mb-4">Latest platform events</div>
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">Loading...</div>
+              ) : (
+                analyticsData.recentActivity.map((activity, idx) => (
+                  <div key={idx} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-blue-50 transition-colors">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center bg-blue-100">
+                      <ActivityIcon type={activity.type} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {activity.user} • {new Date(activity.timestamp).toLocaleDateString()}
-                      </p>
+                      <div className="text-blue-900 font-medium text-sm">{activity.description}</div>
+                      <div className="text-xs text-blue-400">{activity.user} • {new Date(activity.timestamp).toLocaleDateString()}</div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                ))
+              )}
+            </div>
+          </div>
 
           {/* Quick Stats */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
-              <CardDescription>Key performance indicators</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Active Internships</span>
-                  </div>
-                  <span className="text-sm font-medium">{analyticsData.activeInternships}</span>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-blue-800">Quick Stats</span>
+            </div>
+            <div className="text-xs text-blue-400 mb-4">Key performance indicators</div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm">Active Internships</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Avg. Session</span>
-                  </div>
-                  <span className="text-sm font-medium">{analyticsData.engagementMetrics.averageSessionDuration}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Approval Rate</span>
-                  </div>
-                  <span className="text-sm font-medium">
-                    {Math.round(
-                      (analyticsData.applicationStats.find((s) => s.status === "approved")?.count || 0) /
-                        analyticsData.totalApplications *
-                        100
-                    )}%
-                  </span>
-                </div>
+                <span className="text-blue-900 font-semibold">{isLoading ? "-" : analyticsData.activeInternships}</span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">Avg. Session</span>
+                </div>
+                <span className="text-blue-900 font-semibold">{isLoading ? "-" : analyticsData.engagementMetrics.averageSessionDuration}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
