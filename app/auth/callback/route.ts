@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase-simple"
+import { createServerClient } from "@/lib/supabase"
 import { roleManager } from "@/lib/role-manager"
 import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
 
     // Set session cookie for client-side auth
     try {
-      cookies().set("supabase-auth-token", JSON.stringify(data.session), {
+      const cookieStore = await cookies()
+      cookieStore.set("supabase-auth-token", JSON.stringify(data.session), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

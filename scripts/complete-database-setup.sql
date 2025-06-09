@@ -45,6 +45,7 @@ CREATE TABLE internships (
     company TEXT NOT NULL,
     description TEXT NOT NULL,
     requirements TEXT,
+    benefits TEXT,
     location TEXT,
     duration TEXT,
     application_deadline DATE,
@@ -52,7 +53,7 @@ CREATE TABLE internships (
     end_date DATE,
     max_participants INTEGER DEFAULT 10,
     current_participants INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'completed')),
+    status TEXT DEFAULT 'published' CHECK (status IN ('draft', 'published', 'closed')),
     created_by UUID REFERENCES profiles(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -63,12 +64,8 @@ CREATE TABLE internship_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     internship_id UUID REFERENCES internships(id) ON DELETE CASCADE,
     student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    application_text TEXT NOT NULL,
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn')),
-    applied_at TIMESTAMPTZ DEFAULT NOW(),
-    reviewed_at TIMESTAMPTZ,
-    reviewed_by UUID REFERENCES profiles(id),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'withdrawn')),
+    application_date TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(internship_id, student_id)
 );
@@ -78,7 +75,7 @@ CREATE TABLE user_activities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     activity_type TEXT NOT NULL,
-    activity_description TEXT NOT NULL,
+    activity_description TEXT,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -158,14 +155,49 @@ CREATE POLICY "Teachers and admins can manage videos" ON videos FOR ALL USING (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, email_verified)
-    VALUES (
+    -- Insert new profile
+    INSERT INTO public.profiles (
+        id,
+        email,
+        full_name,
+        role,
+        email_verified,
+        created_at,
+        updated_at
+    ) VALUES (
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-        CASE WHEN NEW.email_confirmed_at IS NOT NULL THEN true ELSE false END
+        COALESCE(NEW.raw_user_meta_data->>'role', 'student'),
+        CASE WHEN NEW.email_confirmed_at IS NOT NULL THEN true ELSE false END,
+        NOW(),
+        NOW()
     );
+
+    -- Log the user creation
+    INSERT INTO public.user_activities (
+        user_id,
+        activity_type,
+        activity_description,
+        metadata,
+        created_at
+    ) VALUES (
+        NEW.id,
+        'account_created',
+        'New user account created',
+        jsonb_build_object(
+            'role', COALESCE(NEW.raw_user_meta_data->>'role', 'student'),
+            'email', NEW.email
+        ),
+        NOW()
+    );
+
     RETURN NEW;
+EXCEPTION
+    WHEN others THEN
+        -- Log the error but don't fail the auth process
+        RAISE WARNING 'Failed to create profile for user %: %', NEW.id, SQLERRM;
+        RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -177,7 +209,6 @@ CREATE TRIGGER on_auth_user_created
 
 -- Insert sample internships
 INSERT INTO internships (
-    id,
     title,
     company,
     description,
@@ -187,100 +218,43 @@ INSERT INTO internships (
     application_deadline,
     start_date,
     end_date,
-    max_participants,
-    current_participants,
     status
-) VALUES 
+) VALUES
 (
-    '10000000-0000-0000-0000-000000000001',
-    'Summer Engineering Program',
-    'TechCorp Industries',
-    'Join our exciting summer engineering program where you will work on real-world projects, learn from experienced engineers, and develop your technical skills. This program covers robotics, programming, and engineering design principles.',
-    'Must be in grades 6-8, basic programming knowledge helpful but not required, enthusiasm for STEM subjects',
+    'Junior Software Developer Intern',
+    'TechCorp',
+    'Learn software development with our experienced team',
+    'Basic programming knowledge, Enthusiasm to learn',
     'San Francisco, CA',
-    '8 weeks',
+    '3 months',
     '2024-12-31',
-    '2024-06-15',
-    '2024-08-10',
-    15,
-    3,
-    'active'
+    '2024-06-01',
+    '2024-08-31',
+    'published'
 ),
 (
-    '10000000-0000-0000-0000-000000000002',
-    'Robotics Workshop Internship',
-    'Innovation Labs',
-    'Hands-on experience building and programming robots. Students will learn about sensors, actuators, and control systems while working on exciting robotics projects.',
-    'Grades 7-8, interest in robotics and technology, no prior experience necessary',
+    'Engineering Assistant',
+    'BuildIt Inc',
+    'Assist with engineering projects and learn CAD software',
+    'Interest in engineering, Basic math skills',
     'Austin, TX',
-    '6 weeks',
+    '2 months',
     '2024-12-31',
-    '2024-06-20',
-    '2024-08-01',
-    12,
-    5,
-    'active'
+    '2024-07-01',
+    '2024-08-31',
+    'published'
 ),
 (
-    '10000000-0000-0000-0000-000000000003',
-    'Environmental Engineering Project',
-    'Green Solutions Inc',
-    'Work on environmental sustainability projects including water purification systems, renewable energy solutions, and environmental monitoring systems.',
-    'Grades 6-8, interest in environmental science and engineering, team collaboration skills',
-    'Seattle, WA',
-    '10 weeks',
+    'Data Science Intern',
+    'DataWorks',
+    'Introduction to data analysis and machine learning',
+    'Basic statistics, Python knowledge helpful',
+    'Remote',
+    '4 months',
     '2024-12-31',
-    '2024-06-10',
-    '2024-08-20',
-    10,
-    2,
-    'active'
-);
-
--- Insert sample videos
-INSERT INTO videos (
-    id,
-    title,
-    description,
-    video_url,
-    thumbnail_url,
-    duration,
-    category,
-    grade_level,
-    status
-) VALUES 
-(
-    '20000000-0000-0000-0000-000000000001',
-    'Introduction to Engineering',
-    'Learn the basics of engineering and discover different engineering disciplines',
-    'https://example.com/video1',
-    '/placeholder.svg?height=200&width=300',
-    1800,
-    'Engineering Basics',
-    6,
-    'active'
-),
-(
-    '20000000-0000-0000-0000-000000000002',
-    'Building Your First Robot',
-    'Step-by-step guide to building a simple robot using basic components',
-    'https://example.com/video2',
-    '/placeholder.svg?height=200&width=300',
-    2400,
-    'Robotics',
-    7,
-    'active'
-),
-(
-    '20000000-0000-0000-0000-000000000003',
-    'Programming Fundamentals',
-    'Learn the basics of programming with fun, interactive examples',
-    'https://example.com/video3',
-    '/placeholder.svg?height=200&width=300',
-    2100,
-    'Programming',
-    8,
-    'active'
+    '2024-06-01',
+    '2024-09-30',
+    'published'
 );
 
 COMMIT;

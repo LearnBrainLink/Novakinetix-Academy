@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { enhancedSignUp } from "@/lib/enhanced-auth-actions" // Using the enhanced action
+import { enhancedSignUp } from "@/lib/enhanced-auth-actions"
 import { Mail, Lock, User, CheckCircle, Loader2, ArrowLeft, School, Map, Globe, UserSquare } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -24,19 +24,19 @@ export default function SignUpPage() {
     try {
       const result = await enhancedSignUp(formData)
 
-      if (result?.error) {
+      if (result.error) {
         setMessage({ type: "error", text: result.error })
-      } else if (result?.success) {
+      } else if (result.success) {
         setMessage({
           type: "success",
           text: result.message || "Account created successfully! Please check your email to verify your account.",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error)
       setMessage({
         type: "error",
-        text: "An unexpected error occurred during signup. Please try again.",
+        text: error.message || "An unexpected error occurred during signup. Please try again.",
       })
     } finally {
       setIsLoading(false)
