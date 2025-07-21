@@ -1,0 +1,409 @@
+{
+  "passed": 35,
+  "failed": 32,
+  "total": 67,
+  "details": [
+    {
+      "name": "Page Route: /",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.187Z"
+    },
+    {
+      "name": "Page Route: /login",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.188Z"
+    },
+    {
+      "name": "Page Route: /sign up",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.189Z"
+    },
+    {
+      "name": "Page Route: /dashboard",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.189Z"
+    },
+    {
+      "name": "Page Route: /student-dashboard",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.190Z"
+    },
+    {
+      "name": "Page Route: /intern-dashboard",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.191Z"
+    },
+    {
+      "name": "Page Route: /parent-dashboard",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.193Z"
+    },
+    {
+      "name": "Page Route: /admin",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.194Z"
+    },
+    {
+      "name": "Page Route: /tutoring-request",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.195Z"
+    },
+    {
+      "name": "Page Route: /session-management",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.196Z"
+    },
+    {
+      "name": "Page Route: /admin/volunteer-opportunities",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.197Z"
+    },
+    {
+      "name": "Page Route: /admin/volunteer-hours",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.197Z"
+    },
+    {
+      "name": "Page Route: /videos",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.198Z"
+    },
+    {
+      "name": "Page Route: /internships",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.198Z"
+    },
+    {
+      "name": "Page Route: /profile",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.199Z"
+    },
+    {
+      "name": "API Endpoint: /api/check-env",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.199Z"
+    },
+    {
+      "name": "API Endpoint: /api/test-connection",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.200Z"
+    },
+    {
+      "name": "API Endpoint: /api/test-email",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.200Z"
+    },
+    {
+      "name": "Flask Mail: /health",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.201Z"
+    },
+    {
+      "name": "Flask Mail: /templates",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.201Z"
+    },
+    {
+      "name": "Flask Mail: Send Email",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: app/layout.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: app/page.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: app/globals.css",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: components/logo.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: components/branded-header.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: components/ui/button.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: components/ui/card.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.202Z"
+    },
+    {
+      "name": "File: lib/supabase.ts",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: lib/email-service.ts",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: flask-mail-service/app.py",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: flask-mail-service/requirements.txt",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: package.json",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: next.config.mjs",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: tailwind.config.ts",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: tsconfig.json",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "File: vercel.json",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: app",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: components",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: components/ui",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: lib",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: flask-mail-service",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: public",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Directory: public/images",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Required Env Var: NEXT_PUBLIC_SUPABASE_URL",
+      "passed": false,
+      "details": "Missing",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Required Env Var: NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "passed": false,
+      "details": "Missing",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Required Env Var: NEXT_PUBLIC_APP_URL",
+      "passed": false,
+      "details": "Missing",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Optional Env Var: MAIL_SERVER",
+      "passed": false,
+      "details": "Not set",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Optional Env Var: MAIL_USERNAME",
+      "passed": false,
+      "details": "Not set",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Optional Env Var: MAIL_PASSWORD",
+      "passed": false,
+      "details": "Not set",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Optional Env Var: NEXT_PUBLIC_FLASK_MAIL_SERVICE_URL",
+      "passed": false,
+      "details": "Not set",
+      "timestamp": "2025-07-21T02:22:37.203Z"
+    },
+    {
+      "name": "Schema File: scripts/check-database-schema.sql",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Schema File: scripts/setup-database.sql",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Schema File: scripts/create-admin-accounts.sql",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Security File: lib/simple-auth.ts",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Security File: lib/robust-auth.ts",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Security File: components/auth-redirect-handler.tsx",
+      "passed": true,
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Security Dependencies",
+      "passed": "latest",
+      "details": "Found",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Responsive Design: app/globals.css",
+      "passed": true,
+      "details": "Has responsive classes",
+      "timestamp": "2025-07-21T02:22:37.204Z"
+    },
+    {
+      "name": "Responsive Design: components/branded-header.tsx",
+      "passed": true,
+      "details": "Has responsive classes",
+      "timestamp": "2025-07-21T02:22:37.205Z"
+    },
+    {
+      "name": "Responsive Design: app/page.tsx",
+      "passed": true,
+      "details": "Has responsive classes",
+      "timestamp": "2025-07-21T02:22:37.205Z"
+    },
+    {
+      "name": "Performance: Next.js Config",
+      "passed": false,
+      "details": "Not optimized",
+      "timestamp": "2025-07-21T02:22:37.205Z"
+    },
+    {
+      "name": "Performance: Image Optimization",
+      "passed": true,
+      "details": "Optimized",
+      "timestamp": "2025-07-21T02:22:37.206Z"
+    },
+    {
+      "name": "Performance: Tailwind Purge",
+      "passed": false,
+      "details": "Not optimized",
+      "timestamp": "2025-07-21T02:22:37.206Z"
+    },
+    {
+      "name": "Accessibility: Button Accessibility",
+      "passed": false,
+      "details": "Needs improvement",
+      "timestamp": "2025-07-21T02:22:37.206Z"
+    },
+    {
+      "name": "Accessibility: Form Accessibility",
+      "passed": false,
+      "details": "Needs improvement",
+      "timestamp": "2025-07-21T02:22:37.207Z"
+    },
+    {
+      "name": "Accessibility: Navigation Accessibility",
+      "passed": true,
+      "details": "Accessible",
+      "timestamp": "2025-07-21T02:22:37.207Z"
+    }
+  ]
+}
