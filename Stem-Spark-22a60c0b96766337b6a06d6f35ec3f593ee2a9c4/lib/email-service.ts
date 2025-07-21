@@ -223,3 +223,6 @@ class EmailService {
 
 // Export singleton instance
 export const emailService = new EmailService();
+
+// Export sendEmail function for backward compatibility
+export const sendEmail = emailService.sendTemplatedEmail.bind(emailService);

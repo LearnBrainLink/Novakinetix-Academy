@@ -2,39 +2,27 @@
   "version": 2,
   "builds": [
     {
-      "src": "flask-mail-service/app.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb", "runtime": "python3.9" }
+      "src": "Stem-Spark-22a60c0b96766337b6a06d6f35ec3f593ee2a9c4/package.json",
+      "use": "@vercel/next"
     },
     {
-      "src": "package.json",
-      "use": "@vercel/next",
-      "config": { "distDir": "out" }
+      "src": "Stem-Spark-22a60c0b96766337b6a06d6f35ec3f593ee2a9c4/flask-mail-service/app.py",
+      "use": "@vercel/python"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/email/:path*",
-      "destination": "/flask-mail-service/app.py"
+      "src": "/api/email/(.*)",
+      "dest": "/Stem-Spark-22a60c0b96766337b6a06d6f35ec3f593ee2a9c4/flask-mail-service/app.py"
     },
     {
-      "source": "/:path*",
-      "destination": "/:path*"
+      "src": "/(.*)",
+      "dest": "/Stem-Spark-22a60c0b96766337b6a06d6f35ec3f593ee2a9c4/$1"
     }
   ],
-  "env": {
-    "FLASK_MAIL_SERVER": "@flask-mail-server",
-    "FLASK_MAIL_PORT": "@flask-mail-port",
-    "FLASK_MAIL_USE_TLS": "@flask-mail-use-tls",
-    "FLASK_MAIL_USE_SSL": "@flask-mail-use-ssl",
-    "FLASK_MAIL_USERNAME": "@flask-mail-username",
-    "FLASK_MAIL_PASSWORD": "@flask-mail-password",
-    "FLASK_MAIL_DEFAULT_SENDER": "@flask-mail-default-sender",
-    "FLASK_MAIL_SENDER_NAME": "@flask-mail-sender-name",
-    "FLASK_MAIL_SERVICE_URL": "@flask-mail-service-url",
-    "NOVAKINETIX_ACADEMY_URL": "@novakinetix-academy-url",
-    "NEXT_PUBLIC_SUPABASE_URL": "@next-public-supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next-public-supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key"
+  "functions": {
+    "Stem-Spark-22a60c0b96766337b6a06d6f35ec3f593ee2a9c4/flask-mail-service/app.py": {
+      "maxDuration": 30
+    }
   }
 } 

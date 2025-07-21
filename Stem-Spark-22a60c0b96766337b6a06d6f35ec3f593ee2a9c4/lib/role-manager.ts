@@ -154,3 +154,61 @@ export async function logAdminAction(adminId: string, action: string, targetUser
     console.error('Error logging admin action:', error);
   }
 }
+
+// Export a roleManager object with all functions
+export const roleManager = {
+  getUserRole,
+  getDashboardUrl,
+  hasPermission,
+  isAdmin,
+  isIntern,
+  isStudent,
+  isParent,
+  canEditUser,
+  canDeleteUser,
+  canManageVolunteerHours,
+  canCreateVolunteerOpportunities,
+  canViewAllVolunteerHours,
+  logAdminAction,
+  // Add missing functions that are being used
+  getUserProfile: async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+    
+    return data;
+  },
+  upsertUserProfile: async (user: any, role: UserRole, additionalData?: any) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        email: user.email,
+        role,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown',
+        avatar_url: user.user_metadata?.avatar_url || null,
+        ...additionalData
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error upserting user profile:', error);
+      return false;
+    }
+    
+    return true;
+  },
+  migrateExistingUsersRoles: async () => {
+    // This function would handle migrating existing users to new role system
+    // For now, return true as placeholder
+    return true;
+  }
+};
